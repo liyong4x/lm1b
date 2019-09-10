@@ -13,6 +13,8 @@ models:
           - type: normalization
             mean: 127.5
             std:  127.5
+        postprocessing:
+          - type: resize_prediction_boxes
 
   - name: ssd-mobilenet
     launchers:
@@ -37,3 +39,5 @@ models:
         preprocessing:
           - type: resize
             size: 300
+        postprocessing:
+          - type: resize_prediction_boxes
