@@ -24,6 +24,7 @@ except ImportError as import_error:
     tf = None
 
 from .preprocessor import Preprocessor
+from ..config import ListField, ConfigError
 
 
 class BgrToRgb(Preprocessor):
@@ -80,4 +81,40 @@ class TfConvertImageDType(Preprocessor):
         converted_data = self.converter(image.data, dtype=self.dtype)
         image.data = converted_data.numpy()
 
+        return image
+
+
+class SwapModalitiesBrats(Preprocessor):
+    __provider__ = 'swap_modalities'
+
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({
+            'modality_order': ListField(optional=True, default=None,
+                                        description="Specifies order of modality according to model input")
+        })
+
+        return parameters
+
+    def configure(self):
+        self.modal_order = self.get_value_from_config('modality_order')
+        if len(self.modal_order) != 4:
+            raise ConfigError('{} supports only 4 modality, but found {}'
+                              .format(self.__provider__, len(self.modal_order)))
+        if max(self.modal_order) != 3 or min(self.modal_order) != 0:
+            raise ConfigError('Incorrect modality index found in {} for {}'
+                              .format(self.modal_order, self.__provider__))
+        if len(self.modal_order) != len(set(self.modal_order)):
+            raise ConfigError('Incorrect modality index found in {} for {}. Indexes must be unique'
+                              .format(self.modal_order, self.__provider__))
+
+    def process(self, image, annotation_meta=None):
+        if self.modal_order is not None:
+            image.data = self.swap_modalities(image.data)
+        return image
+
+    def swap_modalities(self, image):
+        order = self.modal_order if image.shape[0] == 4 else [0]
+        image = image[order, :, :, :]
         return image

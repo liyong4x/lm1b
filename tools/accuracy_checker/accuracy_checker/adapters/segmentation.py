@@ -104,11 +104,30 @@ class BrainTumorSegmentationAdapter(Adapter):
     __provider__ = 'brain_tumor_segmentation'
     prediction_types = (BrainTumorSegmentationPrediction, )
 
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({
+            'make_argmax': BoolField(
+                optional=True, default=False, description="Allows to apply argmax operation to output values."
+            ),
+            'shift_labels': BoolField(optional=True, default=False, description='Allows to add + 1 to argmaxed labels')
+        })
+        return parameters
+
+
+    def configure(self):
+        self.argmax = self.get_value_from_config('make_argmax')
+        self.shift = self.get_value_from_config('shift_labels')
+
     def process(self, raw, identifiers=None, frame_meta=None):
         result = []
         frame_meta = frame_meta or [] * len(identifiers)
         raw_outputs = self._extract_predictions(raw, frame_meta)
         for identifier, output in zip(identifiers, raw_outputs[self.output_blob]):
+            if self.argmax:
+                output = np.argmax(output, axis=0) + int(self.shift)
+                output = np.expand_dims(output, axis=0)
             result.append(BrainTumorSegmentationPrediction(identifier, output))
 
         return result
@@ -122,5 +141,43 @@ class BrainTumorSegmentationAdapter(Adapter):
         for output_key in output_keys:
             output_data = [[output[output_key] for output in outputs_list]]
             output_map[output_key] = output_data
+        if 'patch_indices' in meta[-1]:
+            output_shape = output_map[self.output_blob][0][0].shape
+            input_data_shape = meta[0]['image_size']
+            patch_indices = meta[0]['patch_indices'],
+            prediction_shape = [output_shape[1]] + list(input_data_shape[1:])
+            whole_prediction = self.reconstruct_from_patches(output_map[self.output_blob][0], patch_indices, prediction_shape)
+            output_map[self.output_blob] = [whole_prediction]
 
         return output_map
+
+    def reconstruct_from_patches(self, patches, patch_indices, data_shape, default_value=0):
+        data = np.ones(data_shape) * default_value
+        image_shape = data_shape[-3:]
+        count = np.zeros(data_shape, dtype=np.int)
+        for patch, index in zip(patches, patch_indices[0]):
+            image_patch_shape = patch.shape[-3:]
+            if np.any(index < 0):
+                fix_patch = np.asarray((index < 0) * np.abs(index), dtype=np.int)
+                patch = patch[0][..., fix_patch[0]:, fix_patch[1]:, fix_patch[2]:]
+                index[index < 0] = 0
+            if np.any((index + image_patch_shape) >= image_shape):
+                fix_patch = np.asarray(image_patch_shape - (((index + image_patch_shape) >= image_shape)
+                                                            * ((index + image_patch_shape) - image_shape)), dtype=np.int)
+                patch = patch[..., :fix_patch[0], :fix_patch[1], :fix_patch[2]]
+            patch_index = np.zeros(data_shape, dtype=np.bool)
+            patch_index[...,
+                        index[0]:index[0]+patch.shape[-3],
+                        index[1]:index[1]+patch.shape[-2],
+                        index[2]:index[2]+patch.shape[-1]] = True
+            patch_data = np.zeros(data_shape)
+            patch_data[patch_index] = patch.flatten()
+
+            new_data_index = np.logical_and(patch_index, np.logical_not(count > 0))
+            data[new_data_index] = patch_data[new_data_index]
+
+            averaged_data_index = np.logical_and(patch_index, count > 0)
+            if np.any(averaged_data_index):
+                data[averaged_data_index] = (data[averaged_data_index] * count[averaged_data_index] + patch_data[averaged_data_index]) / (count[averaged_data_index] + 1)
+            count[patch_index] += 1
+        return data

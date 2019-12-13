@@ -482,6 +482,79 @@ class Tiling(Preprocessor):
         return image
 
 
+class Tiling3D(Preprocessor):
+    __provider__ = 'tiling_3d'
+
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({
+            'size': NumberField(
+                value_type=int, optional=True, min_value=1,
+                description="Destination size for 3d crop for all dimentions."
+            ),
+            'dst_width': NumberField(
+                value_type=int, optional=True, min_value=1, description="Destination width for 3d crop."
+            ),
+            'dst_height': NumberField(
+                value_type=int, optional=True, min_value=1, description="Destination height for 3d crop."
+            ),
+            'dst_volume': NumberField(
+                value_type=int, optional=True, min_value=1, description="Destination volume for 3d crop."
+            ),
+            'overlap': NumberField(value_type=int, default=0, optional=True, min_value=1)
+        })
+        return parameters
+
+    def configure(self):
+        self.dst_height, self.dst_width, self.dst_volume = get_size_3d_from_config(self.config)
+        self.overlap = self.get_value_from_config('overlap')
+
+    def process(self, image, annotation_meta=None):
+        image_shape = np.array(image.data.shape[1:])
+        patch_size = np.array((self.dst_volume, self.dst_height, self.dst_width))
+        overlap = np.asarray([self.overlap] * len(image_shape))
+        n_patches = np.ceil(image_shape / (patch_size - overlap))
+        overflow = (patch_size - overlap) * n_patches - image_shape + overlap
+        start = -np.ceil(overflow / 2)
+        stop = image_shape + start
+        step = patch_size - overlap
+        patch_indices = np.asarray(
+            np.mgrid[start[0]:stop[0]:step[0], start[1]:stop[1]:step[1],
+            start[2]:stop[2]:step[2]].reshape(3, -1).T, dtype=np.int
+        )
+        batch = list()
+        i = 0
+        while i < len(patch_indices):
+            patch = self.get_patch_from_3d_data(image.data, patch_shape=patch_size, patch_index=patch_indices[i])
+            batch.append(patch)
+            i += 1
+        image.data = batch
+        image.metadata['multi_infer'] = True
+        image.metadata['overlap'] = self.overlap
+        image.metadata['patch_indices'] = patch_indices
+
+        return image
+
+    def get_patch_from_3d_data(self, data, patch_shape, patch_index):
+        patch_index = np.asarray(patch_index, dtype=np.int16)
+        patch_shape = np.asarray(patch_shape)
+        image_shape = data.shape[1:]
+        if np.any(patch_index < 0) or np.any((patch_index + patch_shape) > image_shape):
+            data, patch_index = self.fix_out_of_bound_patch_attempt(data, patch_shape, patch_index)
+        return data[..., patch_index[0]:patch_index[0]+patch_shape[0], patch_index[1]:patch_index[1]+patch_shape[1],patch_index[2]:patch_index[2]+patch_shape[2]]
+
+    def fix_out_of_bound_patch_attempt(self, data, patch_shape, patch_index, ndim=3):
+        image_shape = data.shape[-ndim:]
+        pad_before = np.abs((patch_index < 0) * patch_index)
+        pad_after = np.abs(((patch_index + patch_shape) > image_shape) * ((patch_index + patch_shape) - image_shape))
+        pad_args = np.stack([pad_before, pad_after], axis=1)
+        if pad_args.shape[0] < len(data.shape):
+            pad_args = [[0, 0]] * (len(data.shape) - pad_args.shape[0]) + pad_args.tolist()
+        data = np.pad(data, pad_args, mode="edge")
+        patch_index += pad_before
+        return data, patch_index
+
 class Crop3D(Preprocessor):
     __provider__ = 'crop3d'
 
@@ -516,8 +589,10 @@ class Crop3D(Preprocessor):
 
     @staticmethod
     def crop_center(img, cropx, cropy, cropz):
-
-        z, y, x, _ = img.shape
+        if len(np.shape(img)) == 4:
+            z, y, x, _ = img.shape
+        else:
+            _, _, z, y, x = img.shape
 
         # Make sure starting index is >= 0
         startx = max(x // 2 - (cropx // 2), 0)
@@ -528,8 +603,9 @@ class Crop3D(Preprocessor):
         endx = min(startx + cropx, x)
         endy = min(starty + cropy, y)
         endz = min(startz + cropz, z)
-
-        return img[startz:endz, starty:endy, startx:endx, :]
+        if len(np.shape(img)) == 4:
+            return img[startz:endz, starty:endy, startx:endx, :]
+        return img[:, :, startz:endz, starty:endy, startx:endx]
 
 class TransformedCropWithAutoScale(Preprocessor):
     __provider__ = 'transformed_crop_with_auto_scale'

@@ -15,8 +15,9 @@ limitations under the License.
 """
 
 import numpy as np
+import SimpleITK as sitk
 
-from ..config import BaseField, ConfigError
+from ..config import BaseField, ConfigError, NumberField
 from ..preprocessor import Preprocessor
 from ..utils import get_or_parse_value
 
@@ -103,3 +104,25 @@ class Normalize3d(Preprocessor):
             img[:, :, :, channel] = channel_val
 
         return img
+
+
+class N4BiasFieldCorrection(Preprocessor):
+    __provider__ = 'n4_bias_field_correction'
+
+    @classmethod
+    def parameters(cls):
+        parameters = super().parameters()
+        parameters.update({'skip_modality': NumberField(optional=True, min_value=0, max_value=3, value_type=int)})
+        return parameters
+
+    def configure(self):
+        self.skip_modality = self.get_value_from_config('skip_modality')
+
+    def process(self, image, annotation_meta=None):
+        for m_id, modality in enumerate(image.data):
+            if m_id == self.skip_modality:
+                continue
+            m_img = sitk.GetImageFromArray(modality)
+            correct_modality = sitk.N4BiasFieldCorrection(m_img, m_img > 0)
+            image.data[m_id] = sitk.GetArrayFromImage(correct_modality)
+        return image
