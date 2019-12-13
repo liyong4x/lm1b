@@ -1,12 +1,15 @@
 import cv2
 import numpy as np
-from PIL import Image
 
 from ..config import ConfigError, NumberField, StringField, BoolField
 from ..dependency import ClassProvider
 from ..logging import warning
 from ..preprocessor import Preprocessor, GeometricOperationMetadata
 from ..utils import contains_all, get_size_from_config
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 
 def scale_width(dst_width, dst_height, image_width, image_height,):
@@ -135,18 +138,20 @@ class _OpenCVResizer(_Resizer):
 
 class _PillowResizer(_Resizer):
     __provider__ = 'pillow'
-    supported_interpolations = {
-        'NEAREST': Image.NEAREST,
-        'NONE': Image.NONE,
-        'BILINEAR': Image.BILINEAR,
-        'LINEAR': Image.LINEAR,
-        'BICUBIC': Image.BICUBIC,
-        'CUBIC': Image.CUBIC,
-        'ANTIALIAS': Image.ANTIALIAS,
-    }
     default_interpolation = 'BILINEAR'
 
     def __init__(self, interpolation):
+        if Image is None:
+            raise ImportError('tf backend for resize operation requires TensorFlow. Please install it before usage.')
+        self.supported_interpolations = {
+            'NEAREST': Image.NEAREST,
+            'NONE': Image.NONE,
+            'BILINEAR': Image.BILINEAR,
+            'LINEAR': Image.LINEAR,
+            'BICUBIC': Image.BICUBIC,
+            'CUBIC': Image.CUBIC,
+            'ANTIALIAS': Image.ANTIALIAS,
+        }
         try:
             optional_interpolations = {
                 'BOX': Image.BOX,

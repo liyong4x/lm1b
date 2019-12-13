@@ -25,17 +25,20 @@ from enum import Enum
 from pathlib import Path
 from typing import Union
 from warnings import warn
-from collections import MutableSet
+from collections import MutableSet, OrderedDict
 
-from shapely.geometry.polygon import Polygon
 import numpy as np
-import yamlloader
 import yaml
 
 try:
     import lxml.etree as et
 except ImportError:
     import xml.etree.cElementTree as et
+
+try:
+    from shapely.geometry.polygon import Polygon
+except ImportError:
+    Polygon = None
 
 
 def concat_lists(*lists):
@@ -287,8 +290,15 @@ def read_pickle(file: Union[str, Path], *args, **kwargs):
 
 
 def read_yaml(file: Union[str, Path], *args, **kwargs):
+    # yaml does not keep order of keys in dictionaries but it is important for reading pre/post processing
+    yaml.add_representer(OrderedDict, lambda dumper, data: dumper.represent_dict(data.iteritems()))
+    yaml.add_constructor(
+        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+        lambda loader, node: OrderedDict(loader.construct_pairs(node))
+    )
+
     with get_path(file).open() as content:
-        return yaml.load(content, *args, Loader=yamlloader.ordereddict.Loader, **kwargs)
+        return yaml.safe_load(content, *args, **kwargs)
 
 
 def read_csv(file: Union[str, Path], *args, **kwargs):
@@ -354,6 +364,8 @@ def to_lower_register(str_list):
 
 
 def polygon_from_points(points):
+    if Polygon is None:
+        raise ValueError('shapely is not installed, please install it')
     return Polygon(points)
 
 

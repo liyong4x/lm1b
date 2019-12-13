@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from tqdm import tqdm
 import numpy as np
 
 from ..config import BoolField, PathField
@@ -23,6 +22,10 @@ from ..representation import (
     DetectionAnnotation, PoseEstimationAnnotation, CoCoInstanceSegmentationAnnotation, ContainerAnnotation
 )
 from .format_converter import BaseFormatConverter, FileBasedAnnotationConverter, ConverterReturn, verify_label_map
+try:
+    from tqdm import tqdm
+except ImportError:
+    tqdm = None
 
 
 def get_image_annotation(image_id, annotations_):
@@ -124,8 +127,9 @@ class MSCocoDetectionConverter(BaseFormatConverter):
         detection_annotations = []
         content_errors = [] if check_content else None
         num_iterations = len(image_info)
+        image_iter = tqdm(enumerate(image_info)) if tqdm is not None else enumerate(image_set)
 
-        for (image_id, image) in tqdm(enumerate(image_info)):
+        for (image_id, image) in image_iter:
             image_labels, xmins, ymins, xmaxs, ymaxs, is_crowd, _ = self._read_image_annotation(
                 image, annotations,
                 label_id_to_label

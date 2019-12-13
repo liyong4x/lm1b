@@ -15,9 +15,12 @@ limitations under the License.
 """
 
 import numpy as np
-from scipy.ndimage import interpolation
 from .postprocessor import Postprocessor
 from ..representation import BrainTumorSegmentationPrediction, BrainTumorSegmentationAnnotation
+try:
+    from scipy.ndimage import interpolation
+except ImportError:
+    interpolation = None
 
 
 def resample(data, shape):

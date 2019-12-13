@@ -16,13 +16,15 @@ limitations under the License.
 
 from functools import singledispatch
 import numpy as np
-from PIL import Image
 
 from ..config import NumberField
 from ..utils import get_size_from_config
 from .postprocessor import PostprocessorWithSpecificTargets
 from ..representation import SegmentationPrediction, SegmentationAnnotation
-
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 class ResizeSegmentationMask(PostprocessorWithSpecificTargets):
     __provider__ = 'resize_segmentation_mask'
@@ -49,6 +51,8 @@ class ResizeSegmentationMask(PostprocessorWithSpecificTargets):
 
     def configure(self):
         self.dst_height, self.dst_width = get_size_from_config(self.config, allow_none=True)
+        if Image is None:
+            raise ValueError('Postprocessor resize_segmentation_mask requires Pillow. Please install it')
 
     def process_image(self, annotation, prediction):
         target_height = self.dst_height or self.image_size[0]

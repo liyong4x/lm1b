@@ -18,7 +18,10 @@ from collections import defaultdict
 
 import cv2
 import numpy as np
-from shapely.geometry import Polygon
+try:
+    from shapely.geometry import Polygon
+except ImportError:
+    Polygon = None
 
 
 from ..adapters import Adapter
@@ -827,6 +830,8 @@ class EASTTextDetectionAdapter(Adapter):
         self.score_map_thresh = self.get_value_from_config('score_map_threshold')
         self.nms_thresh = self.get_value_from_config('nms_threshold')
         self.box_thresh = self.get_value_from_config('box_threshold')
+        if Polygon is None:
+            raise ValueError("east_text_detection adapter requires shapely, please install it")
 
     def process(self, raw, identifiers=None, frame_meta=None):
         raw_outputs = self._extract_predictions(raw, frame_meta)
