@@ -111,15 +111,15 @@ class DLSDKLauncherConfigValidator(LauncherConfigValidator):
             framework_parameters = self.check_model_source(entry)
             self._set_model_source(framework_parameters)
         super().validate(entry, field_uri)
-        self.create_device_regex(ie.known_plugins)
-        try:
-            self.fields['device'].validate(entry['device'], field_uri)
-        except ConfigError as error:
-            if ie_core is not None:
-                self.create_device_regex(ie_core.available_devices)
-                self.fields['device'].validate(entry['device'], field_uri)
-            else:
-                raise error
+        # self.create_device_regex(ie.known_plugins)
+        # try:
+        #     self.fields['device'].validate(entry['device'], field_uri)
+        # except ConfigError as error:
+        #     if ie_core is not None:
+        #         self.create_device_regex(ie_core.available_devices)
+        #         self.fields['device'].validate(entry['device'], field_uri)
+        #     else:
+        #         raise error
 
     def _set_model_source(self, framework):
         self.need_conversion = framework.name != 'dlsdk'
