@@ -57,6 +57,7 @@ COMMAND_LINE_ARGS_AS_ENV_VARS = {
 }
 DEFINITION_ENV_VAR = 'DEFINITIONS_FILE'
 
+
 class ConfigReader:
     """
     Class for parsing input config.
@@ -169,7 +170,13 @@ class ConfigReader:
         if not isinstance(config, dict):
             raise ConfigError('local config should has dictionary based structure')
 
-        eval_mode = next(iter(config))
+        evaluation_keys = [key for key in config if key != 'global_definitions']
+        if not evaluation_keys:
+            raise ConfigError('Invalid config structure. No evaluations detected.')
+        if len(evaluation_keys) > 1:
+            raise ConfigError('Multiple evaluation types in the one config is not supported. '
+                              'Please separate on several configs.')
+        eval_mode = next(iter(evaluation_keys))
         config_checker_func = config_checkers.get(eval_mode)
         if config_checker_func is None:
             raise ConfigError('Accuracy Checker {} mode is not supported. Please select between {}'. format(

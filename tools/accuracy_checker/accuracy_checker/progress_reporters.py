@@ -88,7 +88,7 @@ class PrintProgressReporter(ProgressReporter):
 
 class TQDMReporter(ProgressReporter):
     __provider__ = 'bar'
-    def __init__(self, dataset_size=None):
+    def __init__(self, dataset_size=None, **kwargs):
         super().__init__(dataset_size)
         if tqdm is None:
             warnings.warn('tqdm is not available, progress switched to print')
