@@ -246,7 +246,7 @@ class DLSDKLauncher(Launcher):
         # It is an important switch -- while the FASTER RCNN is not reshaped correctly, the
         # whole network should be recreated during reshape
         # it can not be used in case delayed initialization
-        self.reload_network = not delayed_model_loading
+        self.reload_network = False
 
     @property
     def inputs(self):
