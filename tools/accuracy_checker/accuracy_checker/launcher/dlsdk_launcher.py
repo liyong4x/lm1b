@@ -225,7 +225,8 @@ class DLSDKLauncher(Launcher):
             '_aocl': PathField(optional=True, description="path to aocl (FPGA only)"),
             '_vpu_log_level': StringField(
                 optional=True, choices=VPU_LOG_LEVELS, description="VPU LOG level: {}".format(', '.join(VPU_LOG_LEVELS))
-            )
+            ),
+            '_device_config': PathField(optional=True, description='Path to yml file for plugin configuration')
         })
 
         return parameters
@@ -586,6 +587,15 @@ class DLSDKLauncher(Launcher):
             log_level = self.config.get('_vpu_log_level')
             if log_level:
                 self.ie_core.set_config({'VPU_LOG_LEVEL': log_level}, self._device)
+        device_config = self.config.get('_device_config')
+        if device_config:
+            self.configure_device(device_config)
+
+    def configure_device(self, device_config):
+        device_specific_config = read_yaml(device_config)
+        if not isinstance(device_specific_config, dict):
+            raise ConfigError('device specific configuration should be represented as dictionary')
+        self.ie_core.set_config(device_specific_config, self.device)
 
     def auto_num_requests(self):
         concurrency_device = {

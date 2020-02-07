@@ -203,6 +203,12 @@ def build_arguments_parser():
         required=False,
         default=False,
         type=cast_to_bool
+    ),
+    parser.add_argument(
+        '-dc', '--device_config',
+        help='IE device specific configuration file in yml format',
+        required=False,
+        type=get_path,
     )
 
     return parser
