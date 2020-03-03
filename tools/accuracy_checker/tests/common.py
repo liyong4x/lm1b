@@ -107,6 +107,7 @@ class DummyDataset:
         self.label_map = label_map
         self.background = bg
         self.name = 'dummy'
+        self.config = {}
 
     @property
     def metadata(self):
