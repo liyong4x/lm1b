@@ -63,6 +63,12 @@ class BaseRegressionMetric(PerImageEvaluationMetric):
 
     def update(self, annotation, prediction):
         diff = self.calculate_diff(annotation, prediction)
+        if self.profiler:
+            if isinstance(annotation, RegressionAnnotation):
+                ann_value, pred_value = annotation.value, prediction.value
+                self.profiler.update(annotation.identifier, ann_value, pred_value, diff)
+            else:
+                self.profiler.update(annotation.identifier, '', '', diff)
         self.magnitude.append(diff)
 
         return diff
@@ -80,10 +86,13 @@ class BaseRegressionMetric(PerImageEvaluationMetric):
         return ret
 
     def evaluate(self, annotations, predictions):
+        if self.profiler:
+            self.profiler.finish()
         return np.mean(self.magnitude), np.std(self.magnitude)
 
     def reset(self):
         self.magnitude = []
+        self.profiler.reset()
 
 
 class BaseRegressionOnIntervals(PerImageEvaluationMetric):
@@ -200,11 +209,14 @@ class RootMeanSquaredError(BaseRegressionMetric):
 
     def update(self, annotation, prediction):
         rmse = np.sqrt(self.calculate_diff(annotation, prediction))
+        if self.profiler:
+            if isinstance(annotation, RegressionAnnotation):
+                ann_value, pred_value = annotation.value, prediction.value
+                self.profiler.update(annotation.identifier, ann_value, pred_value, rmse)
+            else:
+                self.profiler.update(annotation.identifier, '', '', rmse)
         self.magnitude.append(rmse)
         return rmse
-
-    def evaluate(self, annotations, predictions):
-        return np.mean(self.magnitude), np.std(self.magnitude)
 
 
 class MeanAbsoluteErrorOnInterval(BaseRegressionOnIntervals):
