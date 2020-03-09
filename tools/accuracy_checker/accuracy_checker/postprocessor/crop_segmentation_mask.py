@@ -81,6 +81,7 @@ class CropSegmentationMask(PostprocessorWithSpecificTargets):
     @staticmethod
     def crop2d_segmentation(mask, dst_height, dst_width):
         mask_shape = np.shape(mask)
+        print(mask_shape)
         is_hwc = len(mask_shape) == 3 and mask_shape[-1] in [1, 3]
         is_hw = len(np.shape(mask)) == 2
         if is_hw:
