@@ -56,10 +56,7 @@ class ClassificationAccuracy(PerImageEvaluationMetric):
     def update(self, annotation, prediction):
         result = self.accuracy.update(annotation.label, prediction.top_k(self.top_k))
         if self.profiler:
-            self.profiler.update(
-                annotation.identifier, annotation.label, prediction.top_k(self.top_k), result,
-                prediction.scores
-            )
+            self.profiler.update(annotation.identifier, annotation.label, prediction.top_k(self.top_k), result)
 
         return result
 
@@ -126,9 +123,7 @@ class ClassificationAccuracyClasses(PerImageEvaluationMetric):
     def update(self, annotation, prediction):
         result = self.accuracy.update(annotation.label, prediction.top_k(self.top_k))
         if self.profiler:
-            self.profiler.update(
-                annotation.identifier, annotation.label, prediction.top_k(self.top_k), result, prediction.scores
-            )
+            self.profiler.update(annotation.identifier, annotation.label, prediction.top_k(self.top_k), result)
 
         return result
 
