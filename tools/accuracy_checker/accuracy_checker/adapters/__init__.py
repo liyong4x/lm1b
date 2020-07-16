@@ -50,7 +50,8 @@ from .detection import (
     ClassAgnosticDetectionAdapter,
     FaceBoxesAdapter,
     FaceDetectionAdapter,
-    FaceDetectionRefinementAdapter
+    FaceDetectionRefinementAdapter,
+    FasterRCNNONNX
 )
 from .detection_person_vehicle import (
     PersonVehicleDetectionAdapter,
@@ -106,6 +107,7 @@ __all__ = [
     'FaceDetectionRefinementAdapter',
     'PersonVehicleDetectionAdapter',
     'PersonVehicleDetectionRefinementAdapter',
+    'FasterRCNNONNX',
 
     'SegmentationAdapter',
     'BrainTumorSegmentationAdapter',
