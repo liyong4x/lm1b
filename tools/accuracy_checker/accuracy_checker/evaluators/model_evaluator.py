@@ -201,9 +201,13 @@ class ModelEvaluator(BaseEvaluator):
             self.dataset.batch = self.launcher.batch
         raw_outputs_callback = kwargs.get('output_callback')
         predictions_to_store = []
+        batch_predictions = []
         for batch_id, (batch_input_ids, batch_annotation) in enumerate(self.dataset):
             filled_inputs, batch_meta, batch_identifiers = self._get_batch_input(batch_annotation)
-            batch_predictions = self.launcher.predict(filled_inputs, batch_meta, **kwargs)
+            if len(batch_predictions) > 0:
+                batch_predictions = self.launcher.predict(filled_inputs, batch_meta, batch_predictions[-1].result[-1], **kwargs)
+            else:
+                batch_predictions = self.launcher.predict(filled_inputs, batch_meta, **kwargs)
             if raw_outputs_callback:
                 raw_outputs_callback(
                     batch_predictions, network=self.launcher.network, exec_network=self.launcher.exec_network

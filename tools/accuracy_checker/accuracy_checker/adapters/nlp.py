@@ -191,7 +191,7 @@ class LMN1BAdapter(Adapter):
 
         result = []
         for identifier, output in zip(identifiers, outputs):
-            result.append(LanguageModelingPrediction(identifier, output))
+            result.append(LanguageModelingPrediction(identifier, output, raw))
 
         return result
 

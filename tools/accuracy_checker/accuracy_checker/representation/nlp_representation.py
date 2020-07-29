@@ -34,9 +34,10 @@ class LanguageModelingAnnotation(LanguageModeling):
 
 
 class LanguageModelingPrediction(LanguageModeling):
-    def __init__(self, identifier, logits):
+    def __init__(self, identifier, logits, result):
         super().__init__(identifier)
         self.logits = logits
+        self.result = result
 
 
 class LM1BRepresentation(BaseRepresentation):

@@ -98,7 +98,7 @@ class Launcher(ClassProvider):
     def get_value_from_config(self, key):
         return get_parameter_value_from_config(self.config, self.parameters(), key)
 
-    def predict(self, inputs, metadata=None, **kwargs):
+    def predict(self, inputs, metadata=None, last=None, **kwargs):
         """
         Args:
             inputs: dictionary where keys are input layers names and values are data for them.

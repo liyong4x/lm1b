@@ -286,7 +286,7 @@ class DLSDKLauncher(Launcher):
     def output_blob(self):
         return next(iter(self.original_outputs))
 
-    def predict(self, inputs, metadata=None, **kwargs):
+    def predict(self, inputs, metadata=None, last_infer_result=None, **kwargs):
         """
         Args:
             inputs: dictionary where keys are input layers names and values are data for them.
@@ -295,7 +295,7 @@ class DLSDKLauncher(Launcher):
             raw data from network.
         """
         if self._lstm_inputs:
-            return self.predict_sequential(inputs, metadata)
+            return self.predict_sequential(inputs, metadata, last_infer_result)
         results = []
         for infer_inputs in inputs:
             if self._do_reshape:
@@ -328,8 +328,11 @@ class DLSDKLauncher(Launcher):
 
         return results
 
-    def predict_sequential(self, inputs, metadata=None, **kwargs):
-        lstm_inputs_feed = self._fill_lstm_inputs()
+    def predict_sequential(self, inputs, metadata=None, last_infer_result=None, **kwargs):
+        if last_infer_result is None:
+            lstm_inputs_feed = self._fill_lstm_inputs()
+        else:
+            lstm_inputs_feed = self._fill_lstm_inputs(last_infer_result)
         results = []
         for feed_dict in inputs:
             feed_dict.update(lstm_inputs_feed)

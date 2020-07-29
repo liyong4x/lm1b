@@ -11,15 +11,18 @@ class Perplexity(PerImageEvaluationMetric):
 
     def configure(self):
         self.sentences_perplexity = []
+        self.sum_num = 0.0
+        self.sum_den = 0.0
+        self.sentence_perplexity = 0.0
 
     def update(self, annotation, prediction):
         sentences_softmax = prediction.logits
         tgts = np.array([[annotation.target_ids[0]]])
         if len(annotation.target_ids) != len(sentences_softmax):
             raise ConfigError("The number of annotation.target_ids is not equal to predictions")
-        sum_num = 0.0
-        sum_den = 0.0
-        sentence_perplexity = 0.0
+        sum_num = self.sum_num
+        sum_den = self.sum_den
+        sentence_perplexity = self.sentence_perplexity
         target_weights_in = np.ones([1, 1], np.float32)
         for idx, (target_in, softmax) in enumerate(zip(annotation.target_ids, sentences_softmax)):
             tgts = np.array([[target_in]])
@@ -33,10 +36,13 @@ class Perplexity(PerImageEvaluationMetric):
             if sum_den > 0:
                 sentence_perplexity = np.exp(sum_num / sum_den)
         self.sentences_perplexity.append(sentence_perplexity) #only get the last character's perplexity of one sentence
+        self.sum_num = sum_num
+        self.sum_den = sum_den
+        self.sentence_perplexity = sentence_perplexity
         return sentence_perplexity
 
     def evaluate(self, annotations, predictions):
-        return np.mean(self.sentences_perplexity)
+        return self.sentences_perplexity[-1]
 
 
 class CalculatePerplexity:
