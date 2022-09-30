@@ -1,4 +1,4 @@
-joblib==0.13.2            # via scikit-learn
+joblib==1.2.0            # via scikit-learn
 nibabel==2.4.1
 numpy==1.16.0
 pillow==6.0.0
