@@ -29,4 +29,4 @@ typing-extensions==3.7.2  # via onnx
 typing==3.6.6             # via onnx
 urllib3==1.25.3           # via requests
 werkzeug==0.15.4          # via tensorboard
-wheel==0.33.4             # via tensorboard, tensorflow
+wheel==0.38.1             # via tensorboard, tensorflow
